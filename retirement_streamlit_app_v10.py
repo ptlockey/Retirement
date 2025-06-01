@@ -18,7 +18,9 @@ with col1:
     )
     retirement_date = st.date_input(
         "Planned Retirement Date",
-        value=datetime.date(2032, 8, 17)
+        value=datetime.date(2032, 8, 17),
+        min_value=datetime.date.today(),
+        max_value=datetime.date(2099, 12, 31)  # allow dates up through year 2099
     )
     current_pension_pot = st.number_input(
         "Current Pension Pot (£)", value=61000
@@ -61,7 +63,7 @@ with col2:
     marginal_tax_rate = st.slider(
         "Marginal Tax Rate (%)", 0, 50, 20
     ) / 100
-    dividends_annual = st.number_input(
+    dividend_income = st.number_input(
         "Annual Dividend Income (£)", value=6000
     )
 
@@ -107,16 +109,17 @@ equity_released = max(
     0
 )
 
-# Determine DB income if age >= payout age
+# Determine DB income if age ≥ payout age
 db_income_effective = db_income if age_at_retirement >= db_payout_age else 0
 
 # Total drawdown base (pension + ISA + equity)
 total_drawdown_base = pension_pot_at_retirement + isa_pot_at_retirement + equity_released
 
+# 4% drawdown income
 drawdown_income = total_drawdown_base * 0.04
 
 # Gross income
-gross_income = drawdown_income + db_income_effective + dividends_annual
+gross_income = drawdown_income + db_income_effective + dividend_income
 
 # Tax calculation: income above tax_free_allowance taxed at marginal_tax_rate
 taxable_income = max(0, gross_income - tax_free_allowance)
@@ -133,10 +136,27 @@ st.markdown(f"""
 
 st.markdown("---")
 st.markdown("## 🔍 Retirement Pot Details")
-st.markdown(f"<span style='color:white;'>Pension Pot at Retirement:</span> <span style='color:green;'>£{pension_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
-st.markdown(f"<span style='color:white;'>ISA Pot at Retirement:</span> <span style='color:green;'>£{isa_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
-st.markdown(f"<span style='color:white;'>Equity Released:</span> <span style='color:green;'>£{equity_released:,.0f}</span>", unsafe_allow_html=True)
-st.markdown(f"<span style='color:white;'>DB Income at Retirement:</span> <span style='color:green;'>£{db_income_effective:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(
+    f"<span style='color:white;'>Pension Pot at Retirement:</span> "
+    f"<span style='color:green;'>£{pension_pot_at_retirement:,.0f}</span>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    f"<span style='color:white;'>ISA Pot at Retirement:</span> "
+    f"<span style='color:green;'>£{isa_pot_at_retirement:,.0f}</span>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    f"<span style='color:white;'>Equity Released:</span> "
+    f"<span style='color:green;'>£{equity_released:,.0f}</span>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    f"<span style='color:white;'>DB Income at Retirement:</span> "
+    f"<span style='color:green;'>£{db_income_effective:,.0f}</span>",
+    unsafe_allow_html=True
+)
 
 st.caption("This tool assumes fixed growth rates and simplified tax rules. For personalized advice, consult a financial adviser.")
+
 

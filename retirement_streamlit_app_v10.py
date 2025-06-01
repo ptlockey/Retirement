@@ -29,11 +29,11 @@ with col1:
     pension_growth_rate = st.slider(
         "Expected Annual Pension Growth Rate (%)", 1, 12, 7
     ) / 100
-    raf_pension_annual = st.number_input(
-        "RAF Pension at Retirement (£/year)", value=20000
+    db_income = st.number_input(
+        "DB Income at Payout (£/year)", value=20000
     )
-    dividends_annual = st.number_input(
-        "Annual Dividend Income (£)", value=6000
+    db_payout_age = st.number_input(
+        "Age that DB Scheme Pays Out", min_value=50, max_value=70, value=55
     )
 
 with col2:
@@ -55,19 +55,20 @@ with col2:
     mortgage_outstanding = st.number_input(
         "Mortgage Outstanding at Retirement (£)", value=155000
     )
+    tax_free_allowance = st.number_input(
+        "Estimated Tax Free Allowance (£)", value=12500
+    )
+    marginal_tax_rate = st.slider(
+        "Marginal Tax Rate (%)", 0, 50, 20
+    ) / 100
+    dividends_annual = st.number_input(
+        "Annual Dividend Income (£)", value=6000
+    )
 
 # --- Helper Function ---
 def future_value(present_value, monthly_contribution, annual_rate, months):
-    """
-    Compound a present value plus monthly contributions over a number of months,
-    using a given annual_rate (e.g. 0.07 for 7%).
-    """
-    if months <= 0:
-        return present_value
     monthly_rate = (1 + annual_rate) ** (1 / 12) - 1
-    # FV of initial lump sum
     fv_lump = present_value * (1 + monthly_rate) ** months
-    # FV of monthly contributions (annuity formula)
     if monthly_rate != 0:
         fv_series = monthly_contribution * (((1 + monthly_rate) ** months - 1) / monthly_rate)
     else:
@@ -82,7 +83,6 @@ age_at_retirement = relativedelta(retirement_date, dob).years
 # Calculate months between today and retirement_date
 months_to_retirement = (retirement_date.year - today.year) * 12 + (retirement_date.month - today.month)
 if retirement_date.day < today.day:
-    # If the day of month is earlier, subtract one month
     months_to_retirement -= 1
 
 # Pension pot at retirement
@@ -107,30 +107,21 @@ equity_released = max(
     0
 )
 
-# Total drawdown base
+# Determine DB income if age >= payout age
+db_income_effective = db_income if age_at_retirement >= db_payout_age else 0
+
+# Total drawdown base (pension + ISA + equity)
 total_drawdown_base = pension_pot_at_retirement + isa_pot_at_retirement + equity_released
 
-# 4% drawdown income
 drawdown_income = total_drawdown_base * 0.04
 
-# Calculate tax on RAF pension
-# RAF pension: first £12,500 + additional £3,500 tax-free
-tax_free_thr = 12500 + 3500
-taxable_raf = max(0, raf_pension_annual - tax_free_thr)
-tax_due_raf = taxable_raf * 0.20
-net_raf = raf_pension_annual - tax_due_raf
+# Gross income
+gross_income = drawdown_income + db_income_effective + dividends_annual
 
-# ISA drawdown is tax-free; dividends are assumed taxable at 20%; pension drawdown taxed at 20%
-taxable_drawdown = drawdown_income
-taxable_dividends = dividends_annual
-tax_due_drawdown = taxable_drawdown * 0.20
-tax_due_dividends = taxable_dividends * 0.20
-
-total_tax = tax_due_raf + tax_due_drawdown + tax_due_dividends
-
-# Net income
-gross_income = drawdown_income + raf_pension_annual + dividends_annual
-net_income = gross_income - total_tax
+# Tax calculation: income above tax_free_allowance taxed at marginal_tax_rate
+taxable_income = max(0, gross_income - tax_free_allowance)
+tax_due = taxable_income * marginal_tax_rate
+net_income = gross_income - tax_due
 monthly_net_income = net_income / 12
 
 # --- Display Results ---
@@ -145,5 +136,7 @@ st.markdown("## 🔍 Retirement Pot Details")
 st.markdown(f"<span style='color:white;'>Pension Pot at Retirement:</span> <span style='color:green;'>£{pension_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
 st.markdown(f"<span style='color:white;'>ISA Pot at Retirement:</span> <span style='color:green;'>£{isa_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
 st.markdown(f"<span style='color:white;'>Equity Released:</span> <span style='color:green;'>£{equity_released:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>DB Income at Retirement:</span> <span style='color:green;'>£{db_income_effective:,.0f}</span>", unsafe_allow_html=True)
 
 st.caption("This tool assumes fixed growth rates and simplified tax rules. For personalized advice, consult a financial adviser.")
+

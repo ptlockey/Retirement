@@ -12,27 +12,27 @@ col1, col2 = st.columns(2)
 with col1:
     dob = st.date_input(
         "Your Date of Birth",
-        value=datetime.date(1977, 8, 17),
+        value=datetime.date(1980, 1, 1),
         min_value=datetime.date(1900, 1, 1),
         max_value=datetime.date.today()
     )
     retirement_date = st.date_input(
         "Planned Retirement Date",
-        value=datetime.date(2032, 8, 17),
+        value=datetime.date(2040, 1, 1),
         min_value=datetime.date.today(),
         max_value=datetime.date(2099, 12, 31)
     )
     current_pension_pot = st.number_input(
-        "Current Pension Pot (£)", value=61000
+        "Current Pension Pot (£)", value=0
     )
     monthly_pension_contribution = st.number_input(
-        "Monthly Pension Contribution (£)", value=2100
+        "Monthly Pension Contribution (£)", value=0
     )
     pension_growth_rate = st.slider(
         "Expected Annual Pension Growth Rate (%)", 1, 12, 7
     ) / 100
     db_income = st.number_input(
-        "DB Income at Payout (£/year)", value=20000
+        "DB Income at Payout (£/year)", value=0
     )
     db_payout_age = st.number_input(
         "Age that DB Scheme Pays Out", min_value=50, max_value=70, value=55
@@ -40,7 +40,7 @@ with col1:
 
 with col2:
     current_isa_pot = st.number_input(
-        "Current ISA Pot (£)", value=20000
+        "Current ISA Pot (£)", value=0
     )
     monthly_isa_contribution = st.number_input(
         "Monthly ISA Contribution (£)", value=1000
@@ -49,19 +49,16 @@ with col2:
         "Expected Annual ISA Growth Rate (%)", 1, 12, 7
     ) / 100
     current_house_value = st.number_input(
-        "Current House Value (£)", value=530000
+        "Current House Value (£)", value=0
     )
     future_house_price = st.number_input(
-        "Target Downsized House Price (£)", value=350000
+        "Target Downsized House Price (£)", value=0
     )
     mortgage_outstanding = st.number_input(
-        "Mortgage Outstanding at Retirement (£)", value=155000
-    )
-    tax_free_allowance = st.number_input(
-        "Estimated Tax Free Allowance (£)", value=12500
+        "Mortgage Outstanding at Retirement (£)", value=0
     )
     dividends_annual = st.number_input(
-        "Annual Dividend Income (£)", value=6000
+        "Annual Dividend Income (£)", value=0
     )
 
 # --- Helper Function ---

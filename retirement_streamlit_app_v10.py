@@ -20,7 +20,7 @@ with col1:
         "Planned Retirement Date",
         value=datetime.date(2032, 8, 17),
         min_value=datetime.date.today(),
-        max_value=datetime.date(2099, 12, 31)  # allow dates up through year 2099
+        max_value=datetime.date(2099, 12, 31)
     )
     current_pension_pot = st.number_input(
         "Current Pension Pot (£)", value=61000
@@ -60,10 +60,7 @@ with col2:
     tax_free_allowance = st.number_input(
         "Estimated Tax Free Allowance (£)", value=12500
     )
-    marginal_tax_rate = st.slider(
-        "Marginal Tax Rate (%)", 0, 50, 20
-    ) / 100
-    dividend_income = st.number_input(
+    dividends_annual = st.number_input(
         "Annual Dividend Income (£)", value=6000
     )
 
@@ -109,23 +106,60 @@ equity_released = max(
     0
 )
 
-# Determine DB income if age ≥ payout age
+# Determine DB income if age >= payout age
 db_income_effective = db_income if age_at_retirement >= db_payout_age else 0
 
-# Total drawdown base (pension + ISA + equity)
-total_drawdown_base = pension_pot_at_retirement + isa_pot_at_retirement + equity_released
+# Calculate drawdown incomes separately
+pension_drawdown_income = pension_pot_at_retirement * 0.04
+isa_drawdown_income = isa_pot_at_retirement * 0.04
+equity_drawdown_income = equity_released * 0.04
 
-# 4% drawdown income
-drawdown_income = total_drawdown_base * 0.04
+# Gross incomes by source
+gross_pension = pension_drawdown_income
+gross_isa = isa_drawdown_income
+gross_equity = equity_drawdown_income
+gross_db = db_income_effective
+gross_dividends = dividends_annual
 
-# Gross income
-gross_income = drawdown_income + db_income_effective + dividend_income
+total_gross_income = gross_pension + gross_isa + gross_equity + gross_db + gross_dividends
 
-# Tax calculation: income above tax_free_allowance taxed at marginal_tax_rate
-taxable_income = max(0, gross_income - tax_free_allowance)
-tax_due = taxable_income * marginal_tax_rate
-net_income = gross_income - tax_due
+# --- Tax Calculation (UK bands) ---
+remaining = total_gross_income
+tax = 0
+
+# Band 1: 0 - 12,570 at 0%
+band1 = min(remaining, 12570)
+remaining -= band1
+
+# Band 2: 12,571 - 50,270 at 20%
+band2 = min(max(0, total_gross_income - 12570), 50270 - 12570)
+tax += band2 * 0.20
+remaining -= band2
+
+# Band 3: 50,271 - 125,140 at 40%
+band3 = min(max(0, total_gross_income - 50270), 125140 - 50270)
+tax += band3 * 0.40
+remaining -= band3
+
+# Band 4: above 125,140 at 45%
+band4 = max(0, total_gross_income - 125140)
+tax += band4 * 0.45
+
+net_income = total_gross_income - tax
 monthly_net_income = net_income / 12
+
+# Allocate tax proportionally to each source for net breakdown
+proportion_pension = gross_pension / total_gross_income if total_gross_income > 0 else 0
+proportion_isa = gross_isa / total_gross_income if total_gross_income > 0 else 0
+proportion_equity = gross_equity / total_gross_income if total_gross_income > 0 else 0
+proportion_db = gross_db / total_gross_income if total_gross_income > 0 else 0
+proportion_dividends = gross_dividends / total_gross_income if total_gross_income > 0 else 0
+
+net_pension = gross_pension - tax * proportion_pension
+net_isa = gross_isa - tax * proportion_isa
+net_equity = gross_equity - tax * proportion_equity
+net_db = gross_db - tax * proportion_db
+net_dividends = gross_dividends - tax * proportion_dividends
 
 # --- Display Results ---
 st.markdown(f"""
@@ -136,27 +170,24 @@ st.markdown(f"""
 
 st.markdown("---")
 st.markdown("## 🔍 Retirement Pot Details")
-st.markdown(
-    f"<span style='color:white;'>Pension Pot at Retirement:</span> "
-    f"<span style='color:green;'>£{pension_pot_at_retirement:,.0f}</span>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    f"<span style='color:white;'>ISA Pot at Retirement:</span> "
-    f"<span style='color:green;'>£{isa_pot_at_retirement:,.0f}</span>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    f"<span style='color:white;'>Equity Released:</span> "
-    f"<span style='color:green;'>£{equity_released:,.0f}</span>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    f"<span style='color:white;'>DB Income at Retirement:</span> "
-    f"<span style='color:green;'>£{db_income_effective:,.0f}</span>",
-    unsafe_allow_html=True
-)
+st.markdown(f"<span style='color:white;'>Pension Pot at Retirement:</span> <span style='color:green;'>£{pension_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>ISA Pot at Retirement:</span> <span style='color:green;'>£{isa_pot_at_retirement:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>Equity Released:</span> <span style='color:green;'>£{equity_released:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>DB Income at Retirement:</span> <span style='color:green;'>£{db_income_effective:,.0f}</span>", unsafe_allow_html=True)
+
+st.markdown("---")
+st.markdown("## 💡 Income Breakdown")
+st.markdown(f"<span style='color:white;'>Pension Drawdown (Gross):</span> <span style='color:green;'>£{gross_pension:,.0f}</span> &raquo; <span style='color:green;'>Net: £{net_pension:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>ISA Drawdown (Gross):</span> <span style='color:green;'>£{gross_isa:,.0f}</span> &raquo; <span style='color:green;'>Net: £{net_isa:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>Equity Drawdown (Gross):</span> <span style='color:green;'>£{gross_equity:,.0f}</span> &raquo; <span style='color:green;'>Net: £{net_equity:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>DB Pension (Gross):</span> <span style='color:green;'>£{gross_db:,.0f}</span> &raquo; <span style='color:green;'>Net: £{net_db:,.0f}</span>", unsafe_allow_html=True)
+st.markdown(f"<span style='color:white;'>Dividends (Gross):</span> <span style='color:green;'>£{gross_dividends:,.0f}</span> &raquo; <span style='color:green;'>Net: £{net_dividends:,.0f}</span>", unsafe_allow_html=True)
+
+st.markdown("---")
+st.markdown("## 📋 Assumptions")
+st.markdown("- All investment growths assumed at 7% annually.\n- Tax calculated on total gross income using UK 2023/24 bands: 0% for £0–£12,570; 20% for £12,571–£50,270; 40% for £50,271–£125,140; 45% above £125,140.")
 
 st.caption("This tool assumes fixed growth rates and simplified tax rules. For personalized advice, consult a financial adviser.")
+
 
 

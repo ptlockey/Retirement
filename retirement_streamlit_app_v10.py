@@ -43,7 +43,7 @@ with col2:
         "Current ISA Pot (£)", value=0
     )
     monthly_isa_contribution = st.number_input(
-        "Monthly ISA Contribution (£)", value=1000
+        "Monthly ISA Contribution (£)", value=0
     )
     isa_growth_rate = st.slider(
         "Expected Annual ISA Growth Rate (%)", 1, 12, 7
